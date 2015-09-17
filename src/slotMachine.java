@@ -37,11 +37,17 @@ public class slotMachine {
 		}
 
 		// We've got the money the user is spending total. Let's ask them for their first bet now!
-		requestBet();
+		else {
+			requestBet();
+		}
     }
     private static void requestBet() {
     	final int maxBet = 50, minBet = 1, // The maximum and minimum bets permitted.
     	endGame = 0;                       // The number we want users to enter to end the game.
+
+        if (currentCash < minBet) {
+            endGame(true); // The user has gone bankrupt! Oh noes!
+        }
 
     	// Request the betting cash for this round.
     	System.out.printf("You currently have $%.2f. Type 0 to end the game.%n", currentCash);
@@ -54,26 +60,28 @@ public class slotMachine {
     	}
 		else if (currentCash - betCash < 0) {
 			// Betting this amount would put them in a negative amount of cash!
-			System.out.println("You do not have enough cash to bet this amount.");
+			System.out.println("You do not have enough cash to bet this amount!");
 
 			// Let's restart.
 			requestBet();
 		}
     	else if ((betCash > maxBet) || (betCash < minBet)) {
     		System.out.println("You've entered an invalid bet.");
-    		System.out.printf("Bets must be whole dollars, and between $%d and $%d.", minBet, maxBet);
+    		System.out.printf("Bets must be whole dollars, and between $%d and $%d.%n", minBet, maxBet);
 
     		// Let's restart.
     		requestBet();
     	}
-    	currentCash -= betCash;
-    	roll();
+		else {
+			currentCash -= betCash;
+			roll();
+		}
     }
     private static void roll() {
     	// Give us a nice clean little box :o)
     	final String slotMachineBorderHorizontal = "=========", slotMachineBorderVertical = "|";
 
-    	// Esablish our multipliers.
+    	// Establish our multipliers.
     	final double mp_threeKind = 3, mp_pair = 1.5, mp_7 = 1, mp_straight = 4, mp_three7 = 10;
     	double roundCash = 0; // The cash won this round.
     	int roll1, roll2, roll3; // Set our numbers that were rolled.
@@ -86,28 +94,48 @@ public class slotMachine {
 		// Lets check if they won!
 
 		if ((roll1 == roll2) && (roll2 == roll3)) {
-			// We had a three of a kind!
-			roundCash = betCash * mp_threeKind;
+			// The user had a three of a kind!
+            if (roll1 == 7) {
+                // HOLY WHACK-A-MOLEY WE HAD 3 7s!!!
+                // Since this shows up first the other if statement involving 7s wouldn't get called :o(
+                // Also it's safe to check only the 1st role since we established they're all equal.
+                roundCash = betCash * mp_three7;
+            }
+            else {
+            	roundCash = betCash * mp_threeKind;
+            }
 		}
+		else if ((roll1 == roll2) || (roll2 == roll3) || (roll1 == roll3)) {
+			// The user had a pair!
+			roundCash = betCash * mp_pair;
+		}
+        else if ((roll1 + 1 == roll2) && (roll2 + 1 == roll3)) {
+            // The user got a straight!
+            roundCash = betCash * mp_straight;
+        }
+        else if (roll1 == 7 || roll2 == 7 || roll3 == 7) {
+            // The user got one or two 7s.
+             roundCash = betCash * mp_7;
+        }
 
-		System.out.println("Rolling...");
-    	System.out.printf("%s%n%s %d %d %d %s%n%s%n", slotMachineBorderHorizontal, slotMachineBorderVertical,
+    	System.out.printf("%n%s%n%s %d %d %d %s%n%s%n", slotMachineBorderHorizontal, slotMachineBorderVertical,
     	roll1, roll2, roll3, slotMachineBorderVertical, slotMachineBorderHorizontal);
 
-
+        currentCash += roundCash;
+        requestBet();
     }
     private static void endGame(boolean isBroke) {
     	// The user has either requested to end the game, or went bankrupt.
     	String playAgain;
     	double cashDifference;
     	if (isBroke) {
-    		System.out.println("You went bankrupt!");
-    		System.out.printf("You lost $%.2f tonight.", initialCash);
+    		System.out.println("You ran out of cash!");
+    		System.out.printf("You lost $%.2f tonight.%n", initialCash);
     	}
     	else {
     		cashDifference = currentCash - initialCash;
-    		System.out.println("You requested to end the game.");
-    		System.out.printf("You cashed out with a total of $%.2f left. (A $%.2f difference!)%n", currentCash, initialCash);
+    		System.out.println("\nYou requested to end the game.");
+    		System.out.printf("You cashed out with a total of $%.2f left. (A $%.2f difference!)%n%n", currentCash, cashDifference);
     	}
 
     	System.out.print("Would you like to play again? (y/n) ");
@@ -119,15 +147,11 @@ public class slotMachine {
     		System.out.println("Restarting...");
     		requestMoney();
     	}
-    	else if (playAgain.equals("n")) {
-    		// The user doesn't want to play anymore!
-    		System.out.println("Thanks for playing!");
-    		System.out.println("Exiting...");
-    	}
     	else {
-    		// What?
-    		System.out.println("Unexpected input received.");
+    		// The user doesn't want to play anymore, or enter something other than y or n.
+    		System.out.println("\nThanks for playing!");
     		System.out.println("Exiting...");
+			System.exit(0);
     	}
     }
 }
